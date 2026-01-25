@@ -1,6 +1,6 @@
 [package]
 name = "pingoo"
-version = "0.14.7"
+version = "0.14.8"
 edition = "2024"
 
 [[bin]]
@@ -172,10 +172,10 @@ serde_urlencoded = { git = "https://github.com/pingooio/stdx-rs", branch = "main
 uuid = { git = "https://github.com/pingooio/stdx-rs", branch = "main" }
 
 
-thiserror = { git = "https://github.com/dtolnay/thiserror", rev = "91b181f0899fd42f41c210e73822c29eef29dd6d" }
-thiserror-impl =  { git = "https://github.com/dtolnay/thiserror", rev = "91b181f0899fd42f41c210e73822c29eef29dd6d" }
-async-trait = { git = "https://github.com/dtolnay/async-trait", rev = "46896cb21234573aaeaf378590dc107d9609abca" }
-serde = { git = "https://github.com/serde-rs/serde", rev = "5a44519a9ac88854883f877b8186a9f6dcbf913a" }
-serde_core = { git = "https://github.com/serde-rs/serde", rev = "5a44519a9ac88854883f877b8186a9f6dcbf913a" }
-serde_derive = { git = "https://github.com/serde-rs/serde", rev = "5a44519a9ac88854883f877b8186a9f6dcbf913a" }
-serde_json = { git = "https://github.com/serde-rs/json", rev = "ce410dd77926181445321ce178fbc492a44328aa" }
+thiserror = { git = "https://github.com/dtolnay/thiserror", rev = "ac14934703ad60ece218e6517caf7ae45f5d074e" }
+thiserror-impl =  { git = "https://github.com/dtolnay/thiserror", rev = "ac14934703ad60ece218e6517caf7ae45f5d074e" }
+async-trait = { git = "https://github.com/dtolnay/async-trait", rev = "a6283077eaf47f73f7db6a492a6a3063f44cba37" }
+serde = { git = "https://github.com/serde-rs/serde", rev = "d17902059e77e371d8a7f83ff403f9e760b70f45" }
+serde_core = { git = "https://github.com/serde-rs/serde", rev = "d17902059e77e371d8a7f83ff403f9e760b70f45" }
+serde_derive = { git = "https://github.com/serde-rs/serde", rev = "d17902059e77e371d8a7f83ff403f9e760b70f45" }
+serde_json = { git = "https://github.com/serde-rs/json", rev = "4f6dbfac79647d032b0997b5ab73022340c6dab7" }
