@@ -89,9 +89,7 @@ impl Listener for HttpsListener {
                             client_socket_addr,
                             &self.name,
                             tls_server_config.clone(),
-                        )
-                        .await
-                        {
+                        ).await {
                             Ok(Some(tls_stream)) => tls_stream,
                             _ => return,
                         };

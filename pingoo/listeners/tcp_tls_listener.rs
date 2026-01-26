@@ -60,7 +60,6 @@ impl Listener for TcpAndTlsListener {
                     let tls_server_config = tls_server_config.clone();
                     let name = self.name.clone();
                     let tls_manager = self.tls_manager.clone();
-
                     connections.spawn(async move {
                         if let Ok(Some(tls_stream)) =
                             accept_tls_connection(tcp_stream, tls_manager, client_socket_addr, &name, tls_server_config).await {
