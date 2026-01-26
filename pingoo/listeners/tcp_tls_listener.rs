@@ -56,12 +56,17 @@ impl Listener for TcpAndTlsListener {
                         Err(_) => continue,
                     };
 
-                    if let Ok(Some(tls_stream)) =
-                        accept_tls_connection(tcp_stream, self.tls_manager.clone(), client_socket_addr, &self.name, tls_server_config.clone()).await
-                    {
-                        let service = self.service.clone();
-                        connections.spawn(service.serve_connection(Box::new(tls_stream), client_socket_addr));
-                    };
+                    let service = self.service.clone();
+                    let tls_server_config = tls_server_config.clone();
+                    let name = self.name.clone();
+                    let tls_manager = self.tls_manager.clone();
+
+                    connections.spawn(async move {
+                        if let Ok(Some(tls_stream)) =
+                            accept_tls_connection(tcp_stream, tls_manager, client_socket_addr, &name, tls_server_config).await {
+                            service.serve_connection(Box::new(tls_stream), client_socket_addr).await;
+                        }
+                    });
                 },
                  _ = shutdown_signal.changed() => {
                     break;

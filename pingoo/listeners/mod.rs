@@ -6,7 +6,7 @@ use std::{
 
 use rustls::{ServerConfig, server::Acceptor};
 use socket2::{Domain, Socket, Type};
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::watch};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::watch, time};
 use tokio_rustls::{LazyConfigAcceptor, server::TlsStream};
 use tracing::debug;
 
@@ -26,6 +26,7 @@ pub use tcp_listener::TcpListener;
 pub use tcp_tls_listener::TcpAndTlsListener;
 
 pub const GRACEFUL_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(20);
+pub const TLS_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Listeners handle connections and dispatch HTTP requests to services
 #[async_trait::async_trait]
@@ -116,37 +117,76 @@ async fn accept_tls_connection<IO: Unpin + tokio::io::AsyncRead + tokio::io::Asy
     listener_name: &str,
     tls_server_config: Arc<ServerConfig>,
 ) -> Result<Option<TlsStream<IO>>, ()> {
-    let tls_start_handshake = match LazyConfigAcceptor::new(Acceptor::default(), tcp_stream).await {
-        Ok(tls_start_handshake) => tls_start_handshake,
-        Err(err) => {
-            debug!(listener = listener_name, client = ?client_socket_addr, "error accepting TLS connection: {err:?}");
-            return Err(());
-        }
-    };
+    let tls_start_handshake =
+        match time::timeout(TLS_HANDSHAKE_TIMEOUT, LazyConfigAcceptor::new(Acceptor::default(), tcp_stream)).await {
+            Ok(Ok(tls_start_handshake)) => tls_start_handshake,
+            Ok(Err(err)) => {
+                debug!(
+                    listener = listener_name,
+                    client = ?client_socket_addr,
+                    "error accepting TLS connection: {err:?}"
+                );
+                return Err(());
+            }
+            Err(err) => {
+                debug!(
+                    listener = listener_name,
+                    client = ?client_socket_addr,
+                    "TLS handshake timeout before ClientHello: {err:?}"
+                );
+                return Err(());
+            }
+        };
 
     let client_hello = tls_start_handshake.client_hello();
 
     // handle ACME tls-alpn-01 challenges
     if is_tls_alpn_challenge(&client_hello) {
         let tls_config_acme = tls_manager.get_tls_alpn_01_server_config(&client_hello).await;
-        let mut stream = match tls_start_handshake.into_stream(tls_config_acme).await {
-            Ok(stream) => stream,
-            Err(err) => {
-                debug!(listener = listener_name, client = ?client_socket_addr, "error converting TLS stream to TCP stream for ACME: {err:?}");
-                return Err(());
-            }
-        };
+        let mut stream =
+            match time::timeout(TLS_HANDSHAKE_TIMEOUT, tls_start_handshake.into_stream(tls_config_acme)).await {
+                Ok(Ok(stream)) => stream,
+                Ok(Err(err)) => {
+                    debug!(
+                        listener = listener_name,
+                        client = ?client_socket_addr,
+                        "error converting TLS stream to TCP stream for ACME: {err:?}"
+                    );
+                    return Err(());
+                }
+                Err(err) => {
+                    debug!(
+                        listener = listener_name,
+                        client = ?client_socket_addr,
+                        "TLS handshake timeout during ACME: {err:?}"
+                    );
+                    return Err(());
+                }
+            };
         let _ = stream.shutdown().await;
         return Ok(None);
     }
 
-    let tcp_stream = match tls_start_handshake.into_stream(tls_server_config).await {
-        Ok(tcp_stream) => tcp_stream,
-        Err(err) => {
-            debug!(listener = listener_name, client = ?client_socket_addr, "error converting TLS stream to TCP stream: {err:?}");
-            return Err(());
-        }
-    };
+    let tcp_stream =
+        match time::timeout(TLS_HANDSHAKE_TIMEOUT, tls_start_handshake.into_stream(tls_server_config)).await {
+            Ok(Ok(tcp_stream)) => tcp_stream,
+            Ok(Err(err)) => {
+                debug!(
+                    listener = listener_name,
+                    client = ?client_socket_addr,
+                    "error converting TLS stream to TCP stream: {err:?}"
+                );
+                return Err(());
+            }
+            Err(err) => {
+                debug!(
+                    listener = listener_name,
+                    client = ?client_socket_addr,
+                    "TLS handshake timeout during server config: {err:?}"
+                );
+                return Err(());
+            }
+        };
 
     debug!(listener = listener_name, client = ?client_socket_addr, "TLS connection accepted");
 

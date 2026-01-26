@@ -82,32 +82,34 @@ impl Listener for HttpsListener {
                         Err(_) => continue,
                     };
 
-                    let tls_stream = match accept_tls_connection(
-                        tcp_stream,
-                        self.tls_manager.clone(),
-                        client_socket_addr,
-                        &self.name,
-                        tls_server_config.clone(),
-                    )
-                    .await
-                    {
-                        Ok(Some(tls_stream)) => tls_stream,
-                        _ => continue,
-                    };
+                    tokio::spawn({
+                        let tls_stream = match accept_tls_connection(
+                            tcp_stream,
+                            self.tls_manager.clone(),
+                            client_socket_addr,
+                            &self.name,
+                            tls_server_config.clone(),
+                        )
+                        .await
+                        {
+                            Ok(Some(tls_stream)) => tls_stream,
+                            _ => return,
+                        };
 
-                    tokio::spawn(serve_http_requests(
-                        TokioIo::new(tls_stream),
-                        self.services.clone(),
-                        client_socket_addr,
-                        self.address,
-                        self.name.clone(),
-                        self.rules.clone(),
-                        self.lists.clone(),
-                        self.geoip.clone(),
-                        self.captcha_manager.clone(),
-                        true,
-                        graceful_shutdown.watcher(),
-                    ));
+                        serve_http_requests(
+                            TokioIo::new(tls_stream),
+                            self.services.clone(),
+                            client_socket_addr,
+                            self.address,
+                            self.name.clone(),
+                            self.rules.clone(),
+                            self.lists.clone(),
+                            self.geoip.clone(),
+                            self.captcha_manager.clone(),
+                            true,
+                            graceful_shutdown.watcher(),
+                        )
+                    });
                 },
                 _ = shutdown_signal.changed() => {
                     break;
