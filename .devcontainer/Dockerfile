@@ -1,6 +1,6 @@
-FROM node:24-trixie-slim AS node
+FROM node:slim as node
 
-FROM ubuntu:24.04
+FROM debian:13
 
 ENV TZ="UTC"
 RUN echo "${TZ}" > /etc/timezone
@@ -10,13 +10,13 @@ RUN apt-get update && apt upgrade -y
 RUN apt-get install -y --no-install-recommends \
     # base system. psmisc for killall. openssh-client for git over SSH. socat for docker
     bash curl wget psmisc ca-certificates lsb-release openssh-client socat \
-    # dev tools. dnsutils for dig. linux-tools-generic for perf. bsdmainutils for hexdump.
-    git vim make binutils coreutils build-essential pkg-config linux-tools-generic \
-    zip htop wrk zstd gdb dnsutils jq b3sum gnupg libimage-exiftool-perl bsdmainutils \
+    # dev tools. dnsutils for dig. bsdmainutils for hexdump.
+    git vim make binutils coreutils build-essential pkg-config linux-perf ripgrep \
+    zip htop wrk zstd gdb dnsutils jq b3sum gnupg libimage-exiftool-perl bsdmainutils lsof xxd net-tools iproute2 \
     # Rust toolchain
     rustup libfindbin-libs-perl lld mold gcc g++ musl musl-dev musl-tools libc6-dev cmake clang libclang-dev openssl libssl-dev \
     # useful data. mailcap for mimetypes. tzdata for timezones.
-    mailcap tzdata libpcre3-dev \
+    mailcap tzdata libpcre2-dev \
     # pingoo specific dependencies
     sqlite3
 
@@ -25,7 +25,7 @@ RUN apt-get install -y --no-install-recommends \
 COPY --from=node /usr/local/bin/node /usr/local/bin/
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 RUN npm config set ignore-scripts true
 RUN /usr/local/bin/npm i -g npm@latest
@@ -53,18 +53,9 @@ USER $USERNAME
 COPY --chown=$USERNAME bashrc /home/$USERNAME/.bashrc
 COPY --chown=$USERNAME vimrc /home/$USERNAME/.vimrc
 
-
-# setup Rust
-WORKDIR /home/$USERNAME
-RUN rustup default stable
-
-# setup go
-# RUN mkdir -p /home/$USERNAME/.local/gopath
-# COPY --from=go /usr/local/go /usr/local/go
-# RUN /usr/local/go/bin/go telemetry off
-
 # setup node (again, as a normal user this time)
 RUN npm config set ignore-scripts true
+RUN npm config set prefix '~/.npm/'
 
 # setup git
 RUN git config --global push.autoSetupRemote true
@@ -89,3 +80,8 @@ CMD [ "sleep", "infinity" ]
 
 
 EXPOSE 8080 8081 8082 8083 8443
+
+# Install AI tooling
+# https://code.claude.com/docs/en/setup
+# https://developers.openai.com/codex/cli
+# https://github.com/mistralai/mistral-vibe
