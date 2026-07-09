@@ -45,7 +45,7 @@ Follow us on [Bluesky @pingoo.io](https://bsky.app/profile/pingoo.io) and on Mas
 
 Please open an issue to discuss your idea before submitting a Pull Request.
 
-Contributions that use AI must be disclosed.
+AI-assisted contributions must be disclosed.
 
 
 ## Support
@@ -57,11 +57,11 @@ Feel free to reach our team of experts to see how we can help: https://pingoo.io
 
 ## Security
 
-We are committed to make Pingoo the most secure Load Balancer / Reverse Proxy in the universe and beyond. If you've found a security issue in Pingoo, we appreciate your help in disclosing it to us in a responsible manner by contacting us: https://pingoo.io/contact
+We are committed to making Pingoo the most secure Load Balancer / Reverse Proxy in the universe and beyond. If you've found a security issue in Pingoo, we appreciate your help in disclosing it to us in a responsible manner by contacting us: https://pingoo.io/contact
 
 
 ## License
 
 MIT. See `LICENSE.txt`
 
-Forever Open Source. No Open Core or "Enterprise Edition".
+Forever Open Source, no Open Core or "Enterprise Edition".
